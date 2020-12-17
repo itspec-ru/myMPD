@@ -55,8 +55,11 @@ static int mympd_inihandler(void *user, const char *section, const char *name, c
     else if (MATCH("mpd", "regex")) {
         p_config->regex = strtobool(value);
     }
-    else if (MATCH("webserver", "webport")) {
-        p_config->webport = sdsreplace(p_config->webport, value);
+    else if (MATCH("webserver", "httphost")) {
+        p_config->http_host = sdsreplace(p_config->http_host, value);
+    }
+    else if (MATCH("webserver", "httpport")) {
+        p_config->http_port = sdsreplace(p_config->http_port, value);
     }
 #ifdef ENABLE_SSL
     else if (MATCH("webserver", "ssl")) {
@@ -362,8 +365,8 @@ static void mympd_parse_env(struct t_config *config, const char *envvar) {
 
 static void mympd_get_env(struct t_config *config) {
     const char *env_vars[]={"MPD_HOST", "MPD_PORT", "MPD_PASS", "MPD_MUSICDIRECTORY",
-        "MPD_PLAYLISTDIRECTORY", "MPD_REGEX", "WEBSERVER_WEBPORT", "WEBSERVER_PUBLISH",
-        "WEBSERVER_WEBDAV", "WEBSERVER_ACL", 
+        "MPD_PLAYLISTDIRECTORY", "MPD_REGEX", "WEBSERVER_HTTPHOST", "WEBSERVER_HTTPPORT",
+        "WEBSERVER_PUBLISH", "WEBSERVER_WEBDAV", "WEBSERVER_ACL", 
       #ifdef ENABLE_LUA
         "WEBSERVER_SCRIPTACL",
       #endif
@@ -406,7 +409,8 @@ static void mympd_get_env(struct t_config *config) {
 void mympd_free_config(t_config *config) {
     sdsfree(config->mpd_host);
     sdsfree(config->mpd_pass);
-    sdsfree(config->webport);
+    sdsfree(config->http_host);
+    sdsfree(config->http_port);
 #ifdef ENABLE_SSL
     sdsfree(config->ssl_port);
     sdsfree(config->ssl_cert);
@@ -461,7 +465,8 @@ void mympd_config_defaults(t_config *config) {
     config->mpd_pass = sdsempty();
     config->music_directory = sdsnew("auto");
     config->playlist_directory = sdsnew("/var/lib/mpd/playlists");
-    config->webport = sdsnew("80");
+    config->http_host = sdsnew("0.0.0.0");
+    config->http_port = sdsnew("80");
 #ifdef ENABLE_SSL
     config->ssl = true;
     config->ssl_port = sdsnew("443");
@@ -584,7 +589,8 @@ bool mympd_dump_config(void) {
     );
     
     fprintf(fp, "[webserver]\n"
-        "webport = %s\n"
+        "httphost = %s\n"
+        "httpport = %s\n"
       #ifdef ENABLE_SSL
         "ssl = %s\n"
         "sslport = %s\n"
@@ -600,7 +606,8 @@ bool mympd_dump_config(void) {
         "scriptacl = %s\n"
       #endif
         "\n",
-        p_config->webport,
+        p_config->http_host,
+        p_config->http_port,
       #ifdef ENABLE_SSL
         (p_config->ssl == true ? "true" : "false"),
         p_config->ssl_port,

@@ -28,7 +28,7 @@
 
 //returns true if lyrics are served
 //returns false if waiting for mpd_client to handle request - not implemented yet
-bool handle_tagpics(struct mg_connection *nc, struct http_message *hm, t_mg_user_data *mg_user_data, t_config *config, int conn_id) {
+bool handle_tagpics(struct mg_connection *nc, struct mg_http_message *hm, t_mg_user_data *mg_user_data, t_config *config, int conn_id) {
     //decode uri
     sds uri_decoded = sdsurldecode(sdsempty(), hm->uri.p, (int)hm->uri.len, 0);
     if (sdslen(uri_decoded) == 0) {
